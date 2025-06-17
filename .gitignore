@@ -1,0 +1,13 @@
+# Fichiers et dossiers Terraform à ignorer
+terraform/.terraform/
+terraform/terraform.tfstate
+terraform/terraform.tfstate.*
+terraform/.terraform.tfstate.*
+terraform/crash.log
+terraform/.terraform.lock.hcl
+terraform/*.tfplan
+terraform/ip.txt
+
+.env
+
+hosts
