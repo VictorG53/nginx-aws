@@ -10,23 +10,11 @@ Ce projet permet de lancer une instance EC2 sur AWS avec Terraform et d’instal
 
 ## Utilisation
 
-1. Copier le fichier `.env.example` en `.env` et renseigner les variables requises.
-2. Exécuter le script suivant pour tout déployer :
-
-Windows :
-```bash
-./start.sh
-```
-
-Macos :
-```bash
-sh start.sh
-```
-
-Ce script initialise Terraform, applique la configuration et installe Nginx sur l’instance EC2 créée.
+Le déploiement du projet est désormais automatisé via le pipeline CI/CD GitHub Actions.  
+Il suffit de pousser vos modifications sur le dépôt GitHub pour déclencher le déploiement : le pipeline initialise Terraform, applique la configuration et installe Nginx sur l’instance EC2 créée.
 
 ## Structure
 
 - `main.tf` : Configuration Terraform pour AWS EC2
 - `install_nginx.sh` : Script d’installation de Nginx sur l’instance
-- `start.sh` : Script d’automatisation du déploiement
+- `start.sh` : Ancien script d’automatisation du déploiement (remplacé par le pipeline CI/CD)
