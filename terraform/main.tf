@@ -1,3 +1,18 @@
+terraform {
+  backend "s3" {
+    bucket = "tfstate-ec2"                   # Ton bucket S3 existant
+    key    = "webapp/prod/terraform.tfstate" # Nom du fichier d’état dans le bucket
+    region = "eu-west-3"
+  }
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
 provider "aws" {
   region = var.aws_region
 }
@@ -36,17 +51,16 @@ resource "aws_security_group" "ec2_sg" {
 }
 
 resource "aws_instance" "web" {
-  ami           = var.ami_id
-  instance_type = "t2.micro"
-  key_name      = "iia-2025"
-
+  ami                    = var.ami_id
+  instance_type          = "t2.micro"
+  key_name               = "iia-2025"
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
+
+  associate_public_ip_address = true
 
   tags = {
     Name = "EC2-Instance"
   }
-
-  associate_public_ip_address = true
 
   provisioner "local-exec" {
     command = "echo ${self.public_ip} > ip.txt"

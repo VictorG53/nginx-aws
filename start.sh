@@ -4,6 +4,7 @@ export $(grep -v '^#' .env | xargs)
 # Initialisation de Terraform et application de la configuration
 terraform -chdir=./terraform init
 terraform -chdir=./terraform fmt
+terraform import aws_security_group.ec2_eg sg-017427007c0a619f7
 terraform -chdir=./terraform apply -auto-approve
 
 # Récupération de l'adresse IP de l'instance
