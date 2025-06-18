@@ -1,0 +1,93 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
+      AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+      AWS_REGION: eu-west-3
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform -chdir=./terraform init
+
+      - name: Terraform Fmt
+        run: terraform -chdir=./terraform fmt
+
+      - name: Terraform Apply
+        run: terraform -chdir=./terraform apply -auto-approve
+
+      - name: Get instance IP
+        id: get_ip
+        run: |
+          IP=$(terraform -chdir=./terraform output -raw instance_ip)
+          echo "$IP" > instance_ip.txt
+
+      - name: Upload instance IP
+        uses: actions/upload-artifact@v4
+        with:
+          name: instance_ip
+          path: instance_ip.txt
+
+  ansible:
+    runs-on: ubuntu-latest
+    needs: terraform
+    env:
+      AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
+      AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+      AWS_REGION: eu-west-3
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Ansible
+        run: pip install ansible
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/iia-2025.pem
+          chmod 400 ~/.ssh/iia-2025.pem
+
+      - name: Download instance IP
+        uses: actions/download-artifact@v4
+        with:
+          name: instance_ip
+
+      - name: Read instance IP
+        id: read_ip
+        run: |
+          IP=$(cat instance_ip.txt)
+          echo "INSTANCE_IP=$IP" >> $GITHUB_ENV
+
+      - name: Add instance to known_hosts
+        run: |
+          ssh-keygen -R $INSTANCE_IP || true
+          until ssh-keyscan -H $INSTANCE_IP >> ~/.ssh/known_hosts 2>/dev/null; do
+            echo "En attente que l’instance soit prête..."
+            sleep 2
+          done
+
+      - name: Create Ansible inventory
+        run: |
+          echo "$INSTANCE_IP ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/iia-2025.pem" > hosts
+
+      - name: Run Ansible playbook
+        run: ansible-playbook -i hosts ./ansible/install_nginx.yml
