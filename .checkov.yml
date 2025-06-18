@@ -1,0 +1,8 @@
+check:
+  - CKV_AWS_20
+  - CKV_AWS_21
+  - CKV_AWS_23
+  - CKV_AWS_40
+  - CKV_AWS_41
+  - CKV_AWS_79
+soft-fail: false

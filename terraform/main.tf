@@ -17,6 +17,26 @@ provider "aws" {
   region = var.aws_region
 }
 
+resource "aws_iam_role" "ec2_role" {
+  name               = "ec2_role"
+  assume_role_policy = data.aws_iam_policy_document.ec2_assume_role_policy.json
+}
+
+data "aws_iam_policy_document" "ec2_assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "ec2_profile"
+  role = aws_iam_role.ec2_role.name
+}
+
 resource "aws_security_group" "ec2_sg" {
   name        = "ec2_sg"
   description = "Autorise SSH et HTTP"
@@ -39,6 +59,7 @@ resource "aws_security_group" "ec2_sg" {
   }
 
   egress {
+    description = "Autorise tout le trafic sortant"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -46,7 +67,8 @@ resource "aws_security_group" "ec2_sg" {
   }
 
   tags = {
-    Name = "ec2_sg"
+    description = "Security Group for EC2 instance"
+    Name        = "ec2_sg"
   }
 }
 
@@ -55,8 +77,15 @@ resource "aws_instance" "web" {
   instance_type          = "t2.micro"
   key_name               = "iia-2025"
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+  ebs_optimized          = true
 
   associate_public_ip_address = true
+
+  metadata_options {
+    http_tokens   = "required" # IMDSv2 obligatoire
+    http_endpoint = "enabled"
+  }
 
   tags = {
     Name = "EC2-Instance"
@@ -66,3 +95,5 @@ resource "aws_instance" "web" {
     command = "echo ${self.public_ip} > ip.txt"
   }
 }
+
+
