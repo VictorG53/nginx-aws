@@ -103,7 +103,19 @@ jobs:
           name: instance_ip
           path: instance_ip.txt
 
-  ansible:
+      - name: Get private instance IP
+        id: get_private_ip
+        run: |
+          IP_PRIVATE=$(terraform -chdir=./terraform output -raw instance_ip_private)
+          echo "$IP_PRIVATE" > instance_ip_private.txt
+
+      - name: Upload private instance IP
+        uses: actions/upload-artifact@v4
+        with:
+          name: instance_ip_private
+          path: instance_ip_private.txt
+
+  ansible-nginx:
     runs-on: ubuntu-latest
     needs: terraform-post
     environment: deploy
@@ -153,5 +165,74 @@ jobs:
         run: |
           echo "$INSTANCE_IP ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/iia-2025.pem" > hosts
 
+      - name: Copy app-web files to instance
+        run: |
+          rsync -avz -e "ssh -i ~/.ssh/iia-2025.pem -o StrictHostKeyChecking=no" ./app-web/ ubuntu@$INSTANCE_IP:/home/ubuntu/app-web/
+
       - name: Run Ansible playbook
         run: ansible-playbook -i hosts ./ansible/install_nginx.yml
+
+  ansible-postgresql:
+    runs-on: ubuntu-latest
+    needs: terraform-post
+    environment: deploy
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: eu-west-3
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Ansible
+        run: pip install ansible
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/iia-2025.pem
+          chmod 400 ~/.ssh/iia-2025.pem
+
+      - name: Download private instance IP
+        uses: actions/download-artifact@v4
+        with:
+          name: instance_ip_private
+
+      - name: Download public instance IP
+        uses: actions/download-artifact@v4
+        with:
+          name: instance_ip
+
+      - name: Read instance IPs
+        id: read_ips
+        run: |
+          IP_PRIVATE=$(cat instance_ip_private.txt)
+          IP_PUBLIC=$(cat instance_ip.txt)
+          echo "INSTANCE_IP_PRIVATE=$IP_PRIVATE" >> $GITHUB_ENV
+          echo "INSTANCE_IP_PUBLIC=$IP_PUBLIC" >> $GITHUB_ENV
+
+      - name: Add public instance to known_hosts
+        run: |
+          ssh-keygen -R $INSTANCE_IP_PUBLIC || true
+          until ssh-keyscan -H $INSTANCE_IP_PUBLIC >> ~/.ssh/known_hosts 2>/dev/null; do
+            echo "Attente que l’instance publique soit prête..."
+            sleep 2
+          done
+
+      - name: Add private instance to known_hosts via bastion
+        run: |
+          # Ajoute la clé de l'instance privée via le bastion
+          ssh -i ~/.ssh/iia-2025.pem -o StrictHostKeyChecking=no -o ProxyCommand="ssh -i ~/.ssh/iia-2025.pem -W %h:%p -o StrictHostKeyChecking=no ubuntu@$INSTANCE_IP_PUBLIC" ubuntu@$INSTANCE_IP_PRIVATE 'exit' || true
+
+      - name: Create Ansible inventory for private instance via bastion
+        run: |
+          echo "$INSTANCE_IP_PRIVATE ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/iia-2025.pem ansible_ssh_common_args='-o ProxyCommand=\"ssh -i ~/.ssh/iia-2025.pem -W %h:%p -o StrictHostKeyChecking=no ubuntu@$INSTANCE_IP_PUBLIC\"'" > hosts_private
+
+      - name: Run Ansible playbook for PostgreSQL via bastion
+        run: ansible-playbook -i hosts_private ./ansible/install_postgresql.yml

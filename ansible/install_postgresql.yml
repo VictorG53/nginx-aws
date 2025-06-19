@@ -1,0 +1,46 @@
+- hosts: all
+  become: yes
+  vars:
+    db_name: todos
+    db_user: todo_user
+    db_password: todo_super_secret_password
+  tasks:
+    - name: Installer PostgreSQL
+      apt:
+        name: postgresql
+        state: present
+        update_cache: yes
+
+    - name: S'assurer que le service PostgreSQL est démarré
+      service:
+        name: postgresql
+        state: started
+        enabled: yes
+
+    - name: Installer les dépendances Python pour PostgreSQL
+      apt:
+        name: python3-psycopg2
+        state: present
+
+    - name: Créer la base de données
+      become_user: postgres
+      community.postgresql.postgresql_db:
+        name: "{{ db_name }}"
+
+    - name: Créer l'utilisateur PostgreSQL
+      become_user: postgres
+      community.postgresql.postgresql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        priv: "{{ db_name }}=ALL"
+
+    - name: Créer la table todos si elle n'existe pas
+      become_user: postgres
+      community.postgresql.postgresql_query:
+        db: "{{ db_name }}"
+        query: |
+          CREATE TABLE IF NOT EXISTS todos (
+            id SERIAL PRIMARY KEY,
+            title TEXT NOT NULL,
+            completed BOOLEAN NOT NULL DEFAULT FALSE
+          );
