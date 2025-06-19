@@ -19,8 +19,6 @@
         state: present
         update_cache: yes
     - name: Installer les dépendances Node.js de l'app
-      args:
-        chdir: /home/ubuntu/app-web
       npm:
         path: /home/ubuntu/app-web
         production: yes
