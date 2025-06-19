@@ -11,20 +11,22 @@
         name: nginx
         state: started
         enabled: yes
-    - name: Installer Python3 et pip
+    - name: Installer Node.js et npm
       apt:
         name:
-          - python3
-          - python3-pip
+          - nodejs
+          - npm
         state: present
         update_cache: yes
-    - name: Installer les dépendances Python de l'app
-      pip:
-        requirements: /home/ubuntu/app-web/requirements.txt
-        executable: pip3
-    - name: Lancer l'application Flask en arrière-plan
+    - name: Installer les dépendances Node.js de l'app
+      args:
+        chdir: /home/ubuntu/app-web
+      npm:
+        path: /home/ubuntu/app-web
+        production: yes
+    - name: Lancer l'application Node.js en arrière-plan
       become: false
       args:
         chdir: /home/ubuntu/app-web
       shell: |
-        nohup python3 app.py > app.log 2>&1 &
+        nohup npm start > app.log 2>&1 &
