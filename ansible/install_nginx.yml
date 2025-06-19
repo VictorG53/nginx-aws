@@ -11,3 +11,10 @@
         name: nginx
         state: started
         enabled: yes
+    - name: Copier la clé privée sur l'instance publique
+      copy:
+        src: ~/.ssh/iia-2025.pem
+        dest: /home/ubuntu/iia-2025.pem
+        owner: ubuntu
+        group: ubuntu
+        mode: "0400"
