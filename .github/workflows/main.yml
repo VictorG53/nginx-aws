@@ -94,8 +94,8 @@ jobs:
       - name: Get instance IP
         id: get_ip
         run: |
-          IP=$(terraform -chdir=./terraform output -raw instance_ip)
-          echo "$IP" > instance_ip.txt
+          IP_PUBLIC=$(terraform -chdir=./terraform output -raw instance_ip)
+          echo "$IP_PUBLIC" > instance_ip.txt
 
       - name: Upload instance IP
         uses: actions/upload-artifact@v4
