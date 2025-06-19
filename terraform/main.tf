@@ -72,6 +72,43 @@ resource "aws_security_group" "ec2_sg" {
   }
 }
 
+resource "aws_security_group" "ec2_private_sg" {
+  name        = "ec2_private_sg"
+  description = "Autorise SSH uniquement depuis le SG de l'instance web"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description     = "SSH depuis l'instance web"
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ec2_sg.id]
+  }
+
+  egress {
+    description = "Autorise tout le trafic sortant"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "ec2_private_sg"
+  }
+}
+
+resource "aws_subnet" "private_subnet" {
+  vpc_id                  = var.vpc_id
+  cidr_block              = var.private_subnet_cidr
+  availability_zone       = var.private_subnet_az
+  map_public_ip_on_launch = false
+
+  tags = {
+    Name = "private-subnet"
+  }
+}
+
 resource "aws_instance" "web" {
   ami                    = var.ami_id
   instance_type          = "t2.micro"
@@ -92,8 +129,35 @@ resource "aws_instance" "web" {
   }
 
   provisioner "local-exec" {
-    command = "echo ${self.public_ip} > ip.txt"
+    command = "echo instance public :${self.public_ip} > ip.txt"
   }
+}
+
+resource "aws_instance" "private" {
+  ami                    = var.ami_id
+  instance_type          = "t2.micro"
+  key_name               = "iia-2025"
+  vpc_security_group_ids = [aws_security_group.ec2_private_sg.id]
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+  ebs_optimized          = true
+
+  associate_public_ip_address = false
+
+  subnet_id = aws_subnet.private_subnet.id
+
+  metadata_options {
+    http_tokens   = "required"
+    http_endpoint = "enabled"
+  }
+
+  tags = {
+    Name = "EC2-Private-Instance"
+  }
+
+  provisioner "local-exec" {
+    command = "echo instance private :${self.private_ip} >> ip.txt"
+  }
+
 }
 
 
