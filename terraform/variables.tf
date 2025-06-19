@@ -22,11 +22,13 @@ variable "vpc_id" {
 }
 
 variable "private_subnet_cidr" {
-  description = "CIDR block pour le subnet privé"
+  description = "CIDR du subnet privé"
   type        = string
+  default     = "10.0.2.0/24"
 }
 
 variable "private_subnet_az" {
   description = "Availability Zone pour le subnet privé (ex: eu-west-3a)"
+  default     = "eu-west-3a"
   type        = string
 }
