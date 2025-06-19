@@ -5,6 +5,10 @@
     db_user: todo_user
     db_password: todo_super_secret_password
   tasks:
+    - name: Mettre à jour le cache APT
+      apt:
+        update_cache: yes
+
     - name: Installer Node.js et npm
       apt:
         name:
