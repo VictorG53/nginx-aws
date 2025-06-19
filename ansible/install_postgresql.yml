@@ -5,6 +5,14 @@
     db_user: todo_user
     db_password: todo_super_secret_password
   tasks:
+    - name: Installer Node.js et npm
+      apt:
+        name:
+          - nodejs
+          - npm
+        state: present
+        update_cache: yes
+
     - name: Installer PostgreSQL
       apt:
         name: postgresql
@@ -44,3 +52,10 @@
             title TEXT NOT NULL,
             completed BOOLEAN NOT NULL DEFAULT FALSE
           );
+
+    - name: Lancer l'API Node.js en arrière-plan
+      become: false
+      args:
+        chdir: /home/ubuntu/app-web
+      shell: |
+        nohup npm start > app.log 2>&1 &

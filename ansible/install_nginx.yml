@@ -28,3 +28,10 @@
         chdir: /home/ubuntu/app-web
       shell: |
         nohup npm start > app.log 2>&1 &
+    - name: Copier les fichiers du front dans /var/www/html/
+      copy:
+        src: ../todolist-app/
+        dest: /var/www/html/
+        owner: www-data
+        group: www-data
+        mode: "0755"

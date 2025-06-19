@@ -168,7 +168,9 @@ jobs:
       - name: Copy app-web files to instance
         run: |
           rsync -avz -e "ssh -i ~/.ssh/iia-2025.pem -o StrictHostKeyChecking=no" ./app-web/ ubuntu@$INSTANCE_IP:/home/ubuntu/app-web/
-
+      - name: Copy todolist-app files to instance
+        run: |
+          rsync -avz -e "ssh -i ~/.ssh/iia-2025.pem -o StrictHostKeyChecking=no" ./todolist-app/ ubuntu@$INSTANCE_IP:/home/ubuntu/todolist-app/
       - name: Run Ansible playbook
         run: ansible-playbook -i hosts ./ansible/install_nginx.yml
 
