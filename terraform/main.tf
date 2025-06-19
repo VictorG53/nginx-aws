@@ -74,11 +74,11 @@ resource "aws_security_group" "ec2_sg" {
 
 resource "aws_security_group" "ec2_private_sg" {
   name        = "ec2_private_sg"
-  description = "Autorise SSH uniquement depuis le SG de l'instance web"
+  description = "Autorise SSH uniquement depuis EC2 instance web"
   vpc_id      = var.vpc_id
 
   ingress {
-    description     = "SSH depuis l'instance web"
+    description     = "SSH"
     from_port       = 22
     to_port         = 22
     protocol        = "tcp"
