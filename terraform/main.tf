@@ -37,10 +37,33 @@ resource "aws_iam_instance_profile" "ec2_profile" {
   role = aws_iam_role.ec2_role.name
 }
 
+# Création du VPC
+resource "aws_vpc" "main" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+
+  tags = {
+    Name = "main-vpc"
+  }
+}
+
+# Subnet public
+resource "aws_subnet" "public_subnet" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "eu-west-3a"
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "public-subnet"
+  }
+}
+
 resource "aws_security_group" "ec2_sg" {
   name        = "ec2_sg"
   description = "Autorise SSH et HTTP"
-  vpc_id      = var.vpc_id
+  vpc_id      = aws_vpc.main.id
 
   ingress {
     description = "SSH"
@@ -75,7 +98,7 @@ resource "aws_security_group" "ec2_sg" {
 resource "aws_security_group" "ec2_private_sg" {
   name        = "ec2_private_sg"
   description = "Autorise SSH uniquement depuis EC2 instance web"
-  vpc_id      = var.vpc_id
+  vpc_id      = aws_vpc.main.id
 
   ingress {
     description     = "SSH"
@@ -98,10 +121,11 @@ resource "aws_security_group" "ec2_private_sg" {
   }
 }
 
+# Subnet privé
 resource "aws_subnet" "private_subnet" {
-  vpc_id                  = var.vpc_id
-  cidr_block              = var.private_subnet_cidr
-  availability_zone       = var.private_subnet_az
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.2.0/24"
+  availability_zone       = "eu-west-3a"
   map_public_ip_on_launch = false
 
   tags = {
@@ -118,6 +142,7 @@ resource "aws_instance" "web" {
   ebs_optimized          = true
 
   associate_public_ip_address = true
+  subnet_id                   = aws_subnet.public_subnet.id
 
   metadata_options {
     http_tokens   = "required" # IMDSv2 obligatoire
@@ -142,8 +167,7 @@ resource "aws_instance" "private" {
   ebs_optimized          = true
 
   associate_public_ip_address = false
-
-  subnet_id = aws_subnet.private_subnet.id
+  subnet_id                   = aws_subnet.private_subnet.id
 
   metadata_options {
     http_tokens   = "required"
@@ -157,7 +181,6 @@ resource "aws_instance" "private" {
   provisioner "local-exec" {
     command = "echo instance private :${self.private_ip} >> ip.txt"
   }
-
 }
 
 
