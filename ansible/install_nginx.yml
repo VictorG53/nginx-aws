@@ -3,6 +3,10 @@
   vars:
     api_private_ip: "{{ lookup('env', 'INSTANCE_IP_PRIVATE') }}"
   tasks:
+    - name: Vérifier que api_private_ip est bien définie
+      fail:
+        msg: "La variable api_private_ip (INSTANCE_IP_PRIVATE) n'est pas définie !"
+      when: api_private_ip is undefined or api_private_ip == ""
     - name: Installer Nginx
       apt:
         name: nginx
