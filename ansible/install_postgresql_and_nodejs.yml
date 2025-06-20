@@ -1,69 +1,69 @@
 ---
-- name: Installer et configurer PostgreSQL pour l'application todos
+- name: Installer et configurer MySQL pour l'application todos
   hosts: all
   become: yes
   vars:
-    pg_user: todo_user
-    pg_db: todos
-    pg_password: todo_super_secret_password
+    mysql_root_password: "root_super_secret_password"
+    mysql_user: "todo_user"
+    mysql_db: "todos"
+    mysql_password: "todo_super_secret_password"
 
   tasks:
-    - name: Installer PostgreSQL
+    - name: Installer le serveur MySQL (MariaDB)
       apt:
-        name: postgresql
+        name: mariadb-server
         state: present
         update_cache: yes
 
-    - name: S'assurer que le service PostgreSQL est démarré
+    - name: S'assurer que le service MySQL est démarré
       service:
-        name: postgresql
+        name: mariadb
         state: started
         enabled: yes
 
-    - name: Installer le package python pour PostgreSQL
+    - name: Installer le package python pour MySQL
       apt:
-        name: python3-psycopg2
+        name: python3-pymysql
         state: present
 
-    - name: Récupérer la version de PostgreSQL installée
-      shell: "psql --version | awk '{print $3}' | cut -d. -f1,2"
-      register: pg_version
-      changed_when: false
+    - name: Définir le mot de passe root de MySQL
+      mysql_user:
+        login_user: root
+        login_password: ""
+        user: root
+        password: "{{ mysql_root_password }}"
+        host_all: true
+        check_implicit_admin: true
+      ignore_errors: true
 
-    - name: Définir le chemin du pg_hba.conf
-      set_fact:
-        pg_hba_path: "/etc/postgresql/{{ pg_version.stdout }}/main/pg_hba.conf"
-      when: ansible_facts['os_family'] == 'Debian'
-
-    - name: Autoriser l'authentification md5 pour l'utilisateur postgres
-      replace:
-        path: "{{ pg_hba_path }}"
-        regexp: '^local\s+all\s+postgres\s+peer'
-        replace: "local   all             postgres                                md5"
-      notify: Redémarrer PostgreSQL
-      when: ansible_facts['os_family'] == 'Debian'
-
-    - name: Redémarrer PostgreSQL pour prise en compte du md5
-      service:
-        name: postgresql
-        state: restarted
-      when: ansible_facts['os_family'] == 'Debian'
-
-    - name: Définir le mot de passe de l'utilisateur postgres
-      community.postgresql.postgresql_user:
-        name: postgres
-        password: "{{ pg_password }}"
-        role_attr_flags: "SUPERUSER"
-      become: true
-      become_user: postgres
-      when: ansible_facts['os_family'] == 'Debian'
-
-    - name: Créer l'utilisateur PostgreSQL
-      community.postgresql.postgresql_user:
-        name: "{{ pg_user }}"
-        password: "{{ pg_password }}"
+    - name: Créer la base de données todos
+      community.mysql.mysql_db:
+        name: "{{ mysql_db }}"
         state: present
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
 
+    - name: Créer l'utilisateur todo_user
+      community.mysql.mysql_user:
+        name: "{{ mysql_user }}"
+        password: "{{ mysql_password }}"
+        priv: "{{ mysql_db }}.*:ALL"
+        host: "%"
+        state: present
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+
+    - name: Créer la table todos
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        db: "{{ mysql_db }}"
+        query: |
+          CREATE TABLE IF NOT EXISTS todos (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            title VARCHAR(255) NOT NULL,
+            completed BOOLEAN NOT NULL DEFAULT FALSE
+          );
     - name: Créer la base de données PostgreSQL
       community.postgresql.postgresql_db:
         name: "{{ pg_db }}"
