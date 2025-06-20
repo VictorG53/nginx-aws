@@ -71,14 +71,6 @@
             title VARCHAR(255) NOT NULL,
             completed BOOLEAN NOT NULL DEFAULT FALSE
           );
-      community.postgresql.postgresql_query:
-        db: "{{ pg_db }}"
-        query: |
-          CREATE TABLE IF NOT EXISTS todos (
-            id SERIAL PRIMARY KEY,
-            title VARCHAR(255) NOT NULL,
-            completed BOOLEAN NOT NULL DEFAULT FALSE
-          );
 
   handlers:
     - name: Redémarrer PostgreSQL
