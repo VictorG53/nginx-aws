@@ -25,9 +25,19 @@
         name: python3-psycopg2
         state: present
 
+    - name: Récupérer la version de PostgreSQL installée
+      shell: "psql --version | awk '{print $3}' | cut -d. -f1,2"
+      register: pg_version
+      changed_when: false
+
+    - name: Définir le chemin du pg_hba.conf
+      set_fact:
+        pg_hba_path: "/etc/postgresql/{{ pg_version.stdout }}/main/pg_hba.conf"
+      when: ansible_facts['os_family'] == 'Debian'
+
     - name: Autoriser l'authentification md5 pour l'utilisateur postgres
       replace:
-        path: /etc/postgresql/12/main/pg_hba.conf
+        path: "{{ pg_hba_path }}"
         regexp: '^local\s+all\s+postgres\s+peer'
         replace: "local   all             postgres                                md5"
       notify: Redémarrer PostgreSQL
