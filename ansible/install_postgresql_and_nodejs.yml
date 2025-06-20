@@ -46,3 +46,26 @@
             title VARCHAR(255) NOT NULL,
             completed BOOLEAN NOT NULL DEFAULT FALSE
           );
+
+    - name: Autoriser l'authentification md5 pour l'utilisateur postgres
+      replace:
+        path: /etc/postgresql/12/main/pg_hba.conf
+        regexp: '^local\s+all\s+postgres\s+peer'
+        replace: "local   all             postgres                                md5"
+      notify: Redémarrer PostgreSQL
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Définir le mot de passe de l'utilisateur postgres
+      community.postgresql.postgresql_user:
+        name: postgres
+        password: "{{ pg_password }}"
+        role_attr_flags: "SUPERUSER"
+      become: true
+      become_user: postgres
+      when: ansible_facts['os_family'] == 'Debian'
+
+  handlers:
+    - name: Redémarrer PostgreSQL
+      service:
+        name: postgresql
+        state: restarted
