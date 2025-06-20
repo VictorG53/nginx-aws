@@ -28,6 +28,7 @@
     - name: Créer l'utilisateur PostgreSQL
       become: true
       become_user: postgres
+      become_method: su
       community.postgresql.postgresql_user:
         name: "{{ pg_user }}"
         password: "{{ pg_password }}"
@@ -36,6 +37,7 @@
     - name: Créer la base de données PostgreSQL
       become: true
       become_user: postgres
+      become_method: su
       community.postgresql.postgresql_db:
         name: "{{ pg_db }}"
         owner: "{{ pg_user }}"
@@ -44,6 +46,7 @@
     - name: Créer la table todos
       become: true
       become_user: postgres
+      become_method: su
       community.postgresql.postgresql_query:
         db: "{{ pg_db }}"
         query: |
@@ -52,8 +55,5 @@
             title VARCHAR(255) NOT NULL,
             completed BOOLEAN NOT NULL DEFAULT FALSE
           );
-          CREATE TABLE IF NOT EXISTS todos (
-            id SERIAL PRIMARY KEY,
-            title VARCHAR(255) NOT NULL,
             completed BOOLEAN NOT NULL DEFAULT FALSE
           );
