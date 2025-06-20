@@ -17,13 +17,6 @@
         name: nginx
         state: started
         enabled: yes
-    - name: Installer Node.js et npm
-      apt:
-        name:
-          - nodejs
-          - npm
-        state: present
-        update_cache: yes
     - name: Copier les fichiers du front dans /var/www/html/
       copy:
         src: ../todolist-app/

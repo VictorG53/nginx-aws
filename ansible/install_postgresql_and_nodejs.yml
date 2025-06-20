@@ -1,21 +1,13 @@
-- hosts: all
+---
+- name: Installer et configurer PostgreSQL pour l'application todos
+  hosts: all
   become: yes
   vars:
-    db_name: todos
-    db_user: todo_user
-    db_password: todo_super_secret_password
-  tasks:
-    - name: Mettre à jour le cache APT
-      apt:
-        update_cache: yes
-    - name: Installer Node.js et npm
-      apt:
-        name:
-          - nodejs
-          - npm
-        state: present
-        update_cache: yes
+    pg_user: todo_user
+    pg_db: todos
+    pg_password: todo_super_secret_password
 
+  tasks:
     - name: Installer PostgreSQL
       apt:
         name: postgresql
@@ -28,43 +20,32 @@
         state: started
         enabled: yes
 
-    - name: Installer les dépendances Python pour PostgreSQL
+    - name: Installer le package python pour PostgreSQL
       apt:
         name: python3-psycopg2
         state: present
 
-    - name: Créer la base de données
-      become_user: postgres
-      community.postgresql.postgresql_db:
-        name: "{{ db_name }}"
-
     - name: Créer l'utilisateur PostgreSQL
       become_user: postgres
-      community.postgresql.postgresql_user:
-        name: "{{ db_user }}"
-        password: "{{ db_password }}"
-        priv: "{{ db_name }}=ALL"
+      postgresql_user:
+        name: "{{ pg_user }}"
+        password: "{{ pg_password }}"
+        state: present
 
-    - name: Créer la table todos si elle n'existe pas
+    - name: Créer la base de données PostgreSQL
       become_user: postgres
-      community.postgresql.postgresql_query:
-        db: "{{ db_name }}"
+      postgresql_db:
+        name: "{{ pg_db }}"
+        owner: "{{ pg_user }}"
+        state: present
+
+    - name: Créer la table todos
+      become_user: postgres
+      postgresql_query:
+        db: "{{ pg_db }}"
         query: |
           CREATE TABLE IF NOT EXISTS todos (
             id SERIAL PRIMARY KEY,
-            title TEXT NOT NULL,
+            title VARCHAR(255) NOT NULL,
             completed BOOLEAN NOT NULL DEFAULT FALSE
           );
-
-    - name: Installer les dépendances Node.js (npm install)
-      become: false
-      args:
-        chdir: /home/ubuntu/api
-      shell: npm install
-
-    - name: Lancer l'API Node.js en arrière-plan
-      become: false
-      args:
-        chdir: /home/ubuntu/api
-      shell: |
-        nohup npm start > app.log 2>&1 &
