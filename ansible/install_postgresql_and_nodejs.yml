@@ -56,6 +56,12 @@
             completed BOOLEAN NOT NULL DEFAULT FALSE
           );
 
+    - name: Installer les dépendances Node.js (npm install)
+      become: false
+      args:
+        chdir: /home/ubuntu/api
+      shell: npm install
+
     - name: Lancer l'API Node.js en arrière-plan
       become: false
       args:

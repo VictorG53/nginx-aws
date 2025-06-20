@@ -237,14 +237,17 @@ jobs:
             sleep 2
           done
 
-      - name: Add private instance to known_hosts via bastion
+      - name: Copy Ansible playbook and inventory to public instance
         run: |
-          # Ajoute la clé de l'instance privée via le bastion
-          ssh -i ~/.ssh/iia-2025.pem -o StrictHostKeyChecking=no -o ProxyCommand="ssh -i ~/.ssh/iia-2025.pem -W %h:%p -o StrictHostKeyChecking=no ubuntu@$INSTANCE_IP_PUBLIC" ubuntu@$INSTANCE_IP_PRIVATE 'exit' || true
+          echo "$INSTANCE_IP_PRIVATE ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/iia-2025.pem" > hosts_private
+          scp -i ~/.ssh/iia-2025.pem -o StrictHostKeyChecking=no ./ansible/install_postgresql_and_nodejs.yml ubuntu@$INSTANCE_IP_PUBLIC:/home/ubuntu/
+          scp -i ~/.ssh/iia-2025.pem -o StrictHostKeyChecking=no hosts_private ubuntu@$INSTANCE_IP_PUBLIC:/home/ubuntu/
 
-      - name: Create Ansible inventory for private instance via bastion
+      - name: Run Ansible playbook from public instance to private instance
         run: |
-          echo "$INSTANCE_IP_PRIVATE ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/iia-2025.pem ansible_ssh_common_args='-o ProxyCommand=\"ssh -i ~/.ssh/iia-2025.pem -W %h:%p -o StrictHostKeyChecking=no ubuntu@$INSTANCE_IP_PUBLIC\"'" > hosts_private
-
-      - name: Run Ansible playbook for PostgreSQL via bastion
-        run: ansible-playbook -i hosts_private ./ansible/install_postgresql.yml
+          ssh -i ~/.ssh/iia-2025.pem -o StrictHostKeyChecking=no ubuntu@$INSTANCE_IP_PUBLIC "
+            sudo apt-get update && sudo apt-get install -y python3-pip
+            pip3 install ansible
+            cd /home/ubuntu
+            ansible-playbook -i hosts_private install_postgresql_and_nodejs.yml
+          "
