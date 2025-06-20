@@ -25,11 +25,6 @@
         name: python3-psycopg2
         state: present
 
-    - name: Installer la collection community.postgresql
-      ansible.builtin.ansible_galaxy:
-        command: collection install
-        name: community.postgresql
-
     - name: Créer l'utilisateur PostgreSQL
       become: true
       become_user: postgres
@@ -52,6 +47,11 @@
       community.postgresql.postgresql_query:
         db: "{{ pg_db }}"
         query: |
+          CREATE TABLE IF NOT EXISTS todos (
+            id SERIAL PRIMARY KEY,
+            title VARCHAR(255) NOT NULL,
+            completed BOOLEAN NOT NULL DEFAULT FALSE
+          );
           CREATE TABLE IF NOT EXISTS todos (
             id SERIAL PRIMARY KEY,
             title VARCHAR(255) NOT NULL,
