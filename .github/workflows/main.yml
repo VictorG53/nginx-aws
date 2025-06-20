@@ -171,6 +171,16 @@ jobs:
       - name: Copy todolist-app files to instance
         run: |
           rsync -avz -e "ssh -i ~/.ssh/iia-2025.pem -o StrictHostKeyChecking=no" ./todolist-app/ ubuntu@$INSTANCE_IP:/home/ubuntu/todolist-app/
+      - name: Download private instance IP
+        uses: actions/download-artifact@v4
+        with:
+          name: instance_ip_private
+
+      - name: Export INSTANCE_IP_PRIVATE
+        run: |
+          export INSTANCE_IP_PRIVATE=$(cat instance_ip_private.txt)
+          echo "INSTANCE_IP_PRIVATE=$INSTANCE_IP_PRIVATE" >> $GITHUB_ENV
+
       - name: Run Ansible playbook
         run: ansible-playbook -i hosts ./ansible/install_nginx.yml
 
