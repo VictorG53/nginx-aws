@@ -25,23 +25,31 @@
         name: python3-psycopg2
         state: present
 
+    - name: Installer la collection community.postgresql
+      ansible.builtin.ansible_galaxy:
+        command: collection install
+        name: community.postgresql
+
     - name: Créer l'utilisateur PostgreSQL
+      become: true
       become_user: postgres
-      postgresql_user:
+      community.postgresql.postgresql_user:
         name: "{{ pg_user }}"
         password: "{{ pg_password }}"
         state: present
 
     - name: Créer la base de données PostgreSQL
+      become: true
       become_user: postgres
-      postgresql_db:
+      community.postgresql.postgresql_db:
         name: "{{ pg_db }}"
         owner: "{{ pg_user }}"
         state: present
 
     - name: Créer la table todos
+      become: true
       become_user: postgres
-      postgresql_query:
+      community.postgresql.postgresql_query:
         db: "{{ pg_db }}"
         query: |
           CREATE TABLE IF NOT EXISTS todos (
