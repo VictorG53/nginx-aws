@@ -44,6 +44,12 @@
       file:
         path: /etc/nginx/sites-enabled/default
         state: absent
+    - name: Vérifier la configuration nginx
+      command: nginx -t
+      register: nginx_test
+      changed_when: false
+      failed_when: nginx_test.rc != 0
+
     - name: Recharger nginx
       service:
         name: nginx
