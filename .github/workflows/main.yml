@@ -165,9 +165,9 @@ jobs:
         run: |
           echo "$INSTANCE_IP ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/iia-2025.pem" > hosts
 
-      - name: Copy app-web files to instance
+      - name: Copy api files to instance
         run: |
-          rsync -avz -e "ssh -i ~/.ssh/iia-2025.pem -o StrictHostKeyChecking=no" ./app-web/ ubuntu@$INSTANCE_IP:/home/ubuntu/app-web/
+          rsync -avz -e "ssh -i ~/.ssh/iia-2025.pem -o StrictHostKeyChecking=no" ./api/ ubuntu@$INSTANCE_IP:/home/ubuntu/api/
       - name: Copy todolist-app files to instance
         run: |
           rsync -avz -e "ssh -i ~/.ssh/iia-2025.pem -o StrictHostKeyChecking=no" ./todolist-app/ ubuntu@$INSTANCE_IP:/home/ubuntu/todolist-app/

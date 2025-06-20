@@ -109,9 +109,9 @@ resource "aws_security_group" "ec2_private_sg" {
   }
 
   ingress {
-    description     = "PostgreSQL"
-    from_port       = 5432
-    to_port         = 5432
+    description     = "Node API"
+    from_port       = 3000
+    to_port         = 3000
     protocol        = "tcp"
     security_groups = [aws_security_group.ec2_sg.id]
   }

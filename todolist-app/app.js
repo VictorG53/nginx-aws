@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('todo-form');
     const input = document.getElementById('todo-input');
     const list = document.getElementById('todo-list');
-    const API_URL = '/todos';
+    const API_URL = '/api/todos';
 
     // Charger les todos depuis l'API
     async function fetchTodos() {

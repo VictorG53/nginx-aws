@@ -1,5 +1,7 @@
 - hosts: all
   become: yes
+  vars:
+    api_private_ip: "{{ lookup('env', 'INSTANCE_IP_PRIVATE') }}"
   tasks:
     - name: Installer Nginx
       apt:
@@ -25,3 +27,24 @@
         owner: www-data
         group: www-data
         mode: "0755"
+    - name: Copier la configuration nginx personnalisée depuis un template
+      template:
+        src: ../nginx/nginx.conf.j2
+        dest: /etc/nginx/sites-available/ma-todo.conf
+        owner: root
+        group: root
+        mode: "0644"
+    - name: Activer la configuration nginx personnalisée
+      file:
+        src: /etc/nginx/sites-available/ma-todo.conf
+        dest: /etc/nginx/sites-enabled/ma-todo.conf
+        state: link
+        force: yes
+    - name: Supprimer la configuration par défaut de nginx
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+    - name: Recharger nginx
+      service:
+        name: nginx
+        state: reloaded
